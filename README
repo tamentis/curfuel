@@ -1,3 +1,5 @@
+-*- restructuredtext -*-
+
 =========
  curfuel
 =========
@@ -5,6 +7,13 @@
 curfuel is:
  - an avr driver/program to collect data from a resistive fuel sending unit
  - a python daemon reading the data from the serial/usb port
+
+Requirements
+============
+ - Python 2.5 or above (3.x untested)
+ - PySerial
+ - avr-gcc + avrdude + toolchain (to compile/upload the driver)
+ - A resistive sending unit plugged on an analogic input of your AVR.
 
 Driver
 ======
@@ -15,13 +24,34 @@ return it on the serial/usb port.
 
 Daemon
 ======
-This small piece of software will poll the micro-controller, reading the
-serial/usb port and look for the raw_fuel_level output token then store the
-interpreted gallon level in a flat text file. To save some space, only the
-different readings are stored. The format is::
+This small piece of software will poll the micro-controller every seconds,
+reading the serial/usb port and look for the ``raw_fuel_level`` output token
+then store the interpreted gallon level in a flat text file. To save some
+space, only the different readings are stored. The format is::
 
 	utc_unix_timestamp:uc_ticks:raw_reading:gallons
 
 ``uc_ticks`` and ``raw_readings`` are kept as reference in case of anomaly,
 they are respectively the internal millesecond tick of the microcontroller and
 the raw reading on a 10bit scale averaged.
+
+Installation
+============
+Assuming you have the whole avr toolchain, you can go in the driver directory,
+adjust the device and serial port in the Makefile and type::
+
+    make clean
+    make
+    make upload
+
+Now you can install the daemon with::
+
+    python setup.py install
+
+And you can start curfueld.py. For now the only way to run it is using screen
+to background it. You can also run it as background job with &.
+
+License
+=======
+All the new code is under ISC license (BSD/MIT compatible). Parts of the
+library were not rewritten and are licensed under LGPL (wiring and arduino).
