@@ -27,25 +27,19 @@ typedef struct serial_port {
 	uint8_t			 u2x;
 } serial;
 
-void	store_char(unsigned char, struct ring_buffer *);
-void	setup_serial(serial *, volatile uint8_t *, volatile uint8_t *,
+void	serial_setup(serial *, volatile uint8_t *, volatile uint8_t *,
 		volatile uint8_t *, volatile uint8_t *, volatile uint8_t *,
 		uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-void	begin(serial *, long);
-void	end(serial *);
-int	available(serial *);
-int	peek(serial *);
-int	read(serial *);
-void	flush(serial *);
-void	write(serial *, uint8_t);
-void	print(serial *, const char *);
-void	nprint(serial *, const uint8_t *, size_t);
-void	print_float(serial *, double, uint8_t);
-void	print_byte(serial *, char, int);
-void	print_ubyte(serial *, unsigned char, int);
-void	print_int(serial *, int, int);
-void	print_uint(serial *, unsigned int, int);
-void	print_long(serial *, long, int);
-void	print_ulong(serial *, unsigned long, int);
-void	print_number(serial *, unsigned long, uint8_t);
+void	serial_begin(serial *, long);
+void	serial_end(serial *);
+int	serial_pending(serial *);
+int	serial_peek(serial *);
+int	serial_read(serial *);
+void	serial_flush(serial *);
+void	serial_write(serial *, uint8_t);
+void	serial_print(serial *, const char *);
+void	serial_nprint(serial *, const uint8_t *, size_t);
+void	serial_print_double(serial *, double, uint8_t);
+void	serial_print_ulong(serial *, unsigned long, uint8_t);
+void	serial_print_long(serial *, long, uint8_t);
 

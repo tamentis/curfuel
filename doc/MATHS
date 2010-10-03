@@ -1,0 +1,10 @@
+How to calculate the volume of a tank?
+======================================
+
+Most house tanks have a rectangular shape rounded on one axis, they can
+lay flag (horizontal) or stand (on one of the rounded sides, vertical).
+
+If you decompose the shapes, you can see that the rounded sides are actually
+half-cylinders of the same size, removing these two half-cylinders we have
+only a standard cuboid left, which means the volumne of the tank is the sum of
+the volume of this cuboid plus the volume of the cylinder (two halfs).

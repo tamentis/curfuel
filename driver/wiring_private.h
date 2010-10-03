@@ -37,9 +37,12 @@
 extern "C"{
 #endif
 
+/* Clear bit */
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #endif
+
+/* Set bit */
 #ifndef sbi
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif

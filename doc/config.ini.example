@@ -1,0 +1,20 @@
+# curfueld default configuration
+
+[serial]
+device = /dev/ttyACM0
+
+# Measurements are in metres, the depth is basically how tall your tank is
+# from the gauge to the bottom. The length is the longuest measurement, and
+# width is the last one.
+[tank]
+orientation = horizontal
+depth = 0.68
+length = 1.63
+width = 1.08
+
+# This helps getting the scale, minimum is the measurement when the floating
+# unit is at the lowest level, basically when the tank is empty, maximum
+# is the highest the floating unit could physically go.
+[calibration]
+minimum = 300
+maximum = 1022

@@ -78,7 +78,7 @@ SIGNAL(USART_RX_vect)
 #endif
 
 void
-setup_serial(serial *port, volatile uint8_t *ubrrh, volatile uint8_t *ubrrl,
+serial_setup(serial *port, volatile uint8_t *ubrrh, volatile uint8_t *ubrrl,
 		volatile uint8_t *ucsra, volatile uint8_t *ucsrb,
 		volatile uint8_t *udr, uint8_t rxen, uint8_t txen,
 		uint8_t rxcie, uint8_t udre, uint8_t u2x)
@@ -97,7 +97,7 @@ setup_serial(serial *port, volatile uint8_t *ubrrh, volatile uint8_t *ubrrl,
 }
 
 void
-begin(serial *port, long baud)
+serial_begin(serial *port, long baud)
 {
 	uint16_t baud_setting;
 	int use_u2x;
@@ -126,7 +126,7 @@ begin(serial *port, long baud)
 	  baud_setting = (F_CPU / 8 / baud - 1) / 2;
 	}
 	
-	// assign the baud_setting, a.k.a. ubbr (USART Baud Rate Register)
+	/* Assign the baud_setting, a.k.a. ubbr (USART Baud Rate Register) */
 	*(port->ubrrh) = baud_setting >> 8;
 	*(port->ubrrl) = baud_setting;
 	
@@ -136,7 +136,7 @@ begin(serial *port, long baud)
 }
 
 void
-end(serial *port)
+serial_end(serial *port)
 {
 	cbi(*(port->ucsrb), port->rxen);
 	cbi(*(port->ucsrb), port->txen);
@@ -144,14 +144,14 @@ end(serial *port)
 }
 
 int
-available(serial *port)
+serial_pending(serial *port)
 {
 	return (RX_BUFFER_SIZE + port->rx_buffer->head - port->rx_buffer->tail) %
 			RX_BUFFER_SIZE;
 }
 
 int
-peek(serial *port)
+serial_peek(serial *port)
 {
 	if (port->rx_buffer->head == port->rx_buffer->tail) {
 		return -1;
@@ -161,7 +161,7 @@ peek(serial *port)
 }
 
 int
-read(serial *port)
+serial_read(serial *port)
 {
 	/* if the head isn't ahead of the tail, we don't have any characters */
 	if (port->rx_buffer->head == port->rx_buffer->tail) {
@@ -174,7 +174,7 @@ read(serial *port)
 }
 
 void
-flush(serial *port)
+serial_flush(serial *port)
 {
 	/*
 	 * don't reverse this or there may be problems if the RX
@@ -192,7 +192,7 @@ flush(serial *port)
 }
 
 void
-write(serial *port, uint8_t c)
+serial_write(serial *port, uint8_t c)
 {
 	while (!((*(port->ucsra)) & (1 << (port->udre))))
 		;
@@ -201,129 +201,92 @@ write(serial *port, uint8_t c)
 }
 
 void
-print(serial *port, const char *str)
+serial_print(serial *port, const char *str)
 {
 	while (*str)
-		write(port, *str++);
+		serial_write(port, *str++);
 }
 
 
 void
-nprint(serial *port, const uint8_t *buffer, size_t size)
+serial_nprint(serial *port, const uint8_t *buffer, size_t size)
 {
 	while (size--)
-		write(port, *buffer++);
+		serial_write(port, *buffer++);
 }
 
 void
-print_float(serial *port, double number, uint8_t digits) 
+serial_print_double(serial *port, double number, uint8_t digits) 
 { 
 	uint8_t i;
 
-  // Handle negative numbers
-  if (number < 0.0)
-  {
-     print(port, "-");
-     number = -number;
-  }
+	/* Handle negative numbers */
+	if (number < 0.0) {
+		serial_write(port, '-');
+		number = -number;
+	}
 
-  // Round correctly so that print(1.999, 2) prints as "2.00"
-  double rounding = 0.5;
-  for (i = 0; i < digits; ++i)
-    rounding /= 10.0;
+	/* Round correctly so that print(1.999, 2) prints as "2.00" */
+	double rounding = 0.5;
+	for (i = 0; i < digits; ++i)
+		rounding /= 10.0;
   
-  number += rounding;
+	number += rounding;
 
-  // Extract the integer part of the number and print it
-  unsigned long int_part = (unsigned long)number;
-  double remainder = number - (double)int_part;
-  print(port, int_part);
+	/* Extract the integer part of the number and print it */
+	unsigned long int_part = (unsigned long)number;
+	double remainder = number - (double)int_part;
+	serial_print_ulong(port, int_part, 10);
 
-  // Print the decimal point, but only if there are digits beyond
-  if (digits > 0)
-    print(port, "."); 
+	/* Print the decimal point, but only if there are digits beyond */
+	if (digits > 0)
+		serial_write(port, '.');
 
-  // Extract digits from the remainder one at a time
-  while (digits-- > 0)
-  {
-    remainder *= 10.0;
-    int toPrint = (int)remainder;
-    print(port, toPrint);
-    remainder -= toPrint; 
-  } 
+	/* Extract digits from the remainder one at a time */
+	while (digits-- > 0) {
+		remainder *= 10.0;
+		int to_print = (int)remainder;
+		serial_print_ulong(port, (unsigned long)to_print, 10);
+		remainder -= to_print; 
+	} 
 }
 
 void
-print_byte(serial *port, char c, int base)
+serial_print_long(serial *port, long n, uint8_t base)
 {
-	print_number(port, (long)c, base);
-}
-
-
-void
-print_ubyte(serial *port, unsigned char b, int base)
-{
-	print_number(port, (unsigned long)b, base);
-}
-
-void
-print_int(serial *port, int n, int base)
-{
-	print_number(port, (long)n, base);
-}
-
-
-void
-print_uint(serial *port, unsigned int n, int base)
-{
-	print_number(port, (unsigned long) n, base);
-}
-
-void
-print_long(serial *port, long n, int base)
-{
-  if (base == 0) {
-    write(port, n);
-  } else if (base == 10) {
-    if (n < 0) {
-      print(port, "-");
-      n = -n;
-    }
-    print_number(port, n, 10);
-  } else {
-    print_number(port, n, base);
-  }
-}
-
-void
-print_ulong(serial *port, unsigned long n, int base)
-{
-	if (base == 0)
-		write(port, n);
-	else
+	if (base == 0) {
+		serial_write(port, n);
+	} else if (base == 10) {
+		if (n < 0) {
+			print(port, "-");
+			n = -n;
+		}
+		print_number(port, n, 10);
+	} else {
 		print_number(port, n, base);
+	}
 }
 
-
 void
-print_number(serial *port, unsigned long n, uint8_t base)
+serial_print_ulong(serial *port, unsigned long n, uint8_t base)
 {
-  unsigned char buf[8 * sizeof(long)]; // Assumes 8-bit chars. 
-  unsigned long i = 0;
-
-  if (n == 0) {
-    print(port, "0");
-    return;
-  } 
-
-  while (n > 0) {
-    buf[i++] = n % base;
-    n /= base;
-  }
-
-  for (; i > 0; i--)
-    print(port, (char) (buf[i - 1] < 10 ?
-      '0' + buf[i - 1] :
-      'A' + buf[i - 1] - 10));
+	unsigned char buf[8 * sizeof(long)]; // Assumes 8-bit chars. 
+	unsigned long i = 0;
+	
+	if (n == 0) {
+		serial_write(port, '0');
+		return;
+	} 
+	
+	while (n > 0) {
+		buf[i++] = n % base;
+		n /= base;
+	}
+	
+	for (; i > 0; i--) {
+		serial_write(port, (char) (buf[i - 1] < 10 ?
+			'0' + buf[i - 1] :
+			'A' + buf[i - 1] - 10));
+	}
 }
 

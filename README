@@ -1,0 +1,27 @@
+=========
+ curfuel
+=========
+
+curfuel is:
+ - an avr driver/program to collect data from a resistive fuel sending unit
+ - a python daemon reading the data from the serial/usb port
+
+Driver
+======
+The driver is written in C and will cross-compile with GCC. It will make
+the Atmel microcontroller wait for instructions from the serial/usb port
+and sample the fuel level ten times over 100ms to create an average and
+return it on the serial/usb port.
+
+Daemon
+======
+This small piece of software will poll the micro-controller, reading the
+serial/usb port and look for the raw_fuel_level output token then store the
+interpreted gallon level in a flat text file. To save some space, only the
+different readings are stored. The format is::
+
+	utc_unix_timestamp:uc_ticks:raw_reading:gallons
+
+``uc_ticks`` and ``raw_readings`` are kept as reference in case of anomaly,
+they are respectively the internal millesecond tick of the microcontroller and
+the raw reading on a 10bit scale averaged.
