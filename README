@@ -29,11 +29,19 @@ reading the serial/usb port and look for the ``raw_fuel_level`` output token
 then store the interpreted gallon level in a flat text file. To save some
 space, only the different readings are stored. The format is::
 
-	utc_unix_timestamp:uc_ticks:raw_reading:gallons
+	code:utc_unix_timestamp:uc_ticks:raw_reading:gallons
 
 ``uc_ticks`` and ``raw_readings`` are kept as reference in case of anomaly,
 they are respectively the internal millesecond tick of the microcontroller and
 the raw reading on a 10bit scale averaged.
+
+If parsing the file, expect ``code`` to be ``r`` in normal conditions. Errors
+and warnings will be reported with ``e`` and ``w``.
+
+The daemon will try as hard as possible to be error tolerant, it won't die
+if the device is unplugged and will wait patiently for it to be available
+again, you might get a few errors/warnings in your log file, but they are
+properly prefixed.
 
 Installation
 ============
@@ -48,8 +56,17 @@ Now you can install the daemon with::
 
     python setup.py install
 
-And you can start curfueld.py. For now the only way to run it is using screen
-to background it. You can also run it as background job with &.
+You can copy the configuration file somewhere convenient (/etc comes to mind),
+update the device in the [serial] section and calibrate it::
+
+    curfueld.py -c /etc/curfueld.ini
+
+After moving your sending unit to both extremities a few times, take note of
+the minimum and maximum and update your configuration file.
+
+You can now start curfueld.py. There is currently no automatic way to
+background the process, a few alternatives are just running it with &, using
+screen/tmux.
 
 License
 =======

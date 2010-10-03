@@ -18,3 +18,8 @@ width = 1.08
 [calibration]
 minimum = 300
 maximum = 1022
+
+# This configure the output file
+[output]
+file = curfuel.txt
+

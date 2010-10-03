@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import sys
 import time
 import serial
@@ -13,6 +14,7 @@ class DaemonApp(object):
         self.port_name = None
         self.port_retries = 10
         self.port_speed = 9600
+        self.port_retry_timeout = 1.0
         self.tank_orientation = None
         self.fuel_token = "raw_fuel_level"
         self.min_value = 0.0
@@ -25,6 +27,7 @@ class DaemonApp(object):
         self.port_name = cp.get("serial", "device")
         self.min_value = float(cp.get("calibration", "minimum"))
         self.max_value = float(cp.get("calibration", "maximum"))
+        self.output_file = cp.get("output", "file")
 
         # Setup tank
         orientation = cp.get("tank", "orientation")
@@ -44,9 +47,15 @@ class DaemonApp(object):
             except:
                 if retries > 0:
                     retries -= 1
+                    time.sleep(self.port_retry_timeout)
                     pass
                 else:
                     raise
+
+    def close_port(self):
+        if self.port:
+            self.port.close()
+            self.port = None
 
     def parse_line(self, line):
         tokens = line.split(":")
@@ -65,15 +74,20 @@ class DaemonApp(object):
 
         return uc_ticks, float(value)
 
-    def handle_value(self, value):
+    def write_line(self, code, data):
+        line = "%s:%.1f:%s\n" % (code, time.time(), data)
+        with open(self.output_file, "a") as fp:
+            fp.write(line)
+
+    def handle_value(self, ticks, value):
         # too low!
         if value < self.min_value:
-            print("Value below threshold!")
+            self.write_line("w", "below threshold")
             return
 
         # too high
         if value > self.max_value:
-            print("Value above threshold!")
+            self.write_line("w", "above threshold")
             return
 
         scale = self.max_value - self.min_value
@@ -83,24 +97,42 @@ class DaemonApp(object):
         cubic_meters = self.tank.get_liquid_volume(liquid_level)
         gallons = self.tank.litres_to_gallons(cubic_meters)
 
-        print("raw:%f   %.1f cm   %.1f litres   %.1f gallons" % (value,
-                liquid_level, cubic_meters * 1000.0, gallons))
+        data = "%s:%f:%f" % (ticks, value, gallons)
+        self.write_line("r", data)
+
+        #print("raw:%f   %.1f cm   %.1f litres   %.1f gallons" % (value,
+        #        liquid_level, cubic_meters * 1000.0, gallons))
 
     def get_lines(self, delay):
-        """Generator of serial lines."""
+        """Generator for fetched lines with a tolerance to unplugged device."""
+        # device failure loop
         while True:
-            self.port.write("f")
-            data = ""
-            while self.port.inWaiting():
-                byte = self.port.read()
-                if byte == '\n':
-                    tokens = self.parse_line(data)
-                    if tokens:
-                        yield tokens
-                    break
-                else:
-                    data += byte
-            time.sleep(delay)
+            try:
+                # line scan loop
+                while True:
+                    self.port.write("f")
+                    data = ""
+                    # character scan loop
+                    while self.port.inWaiting():
+                        byte = self.port.read()
+                        if byte == '\n':
+                            tokens = self.parse_line(data)
+                            if tokens:
+                                yield tokens
+                            break
+                        else:
+                            data += byte
+                    time.sleep(delay)
+            except OSError:
+                self.write_line("e", "lost device")
+                self.close_port()
+                self._wait_for_device()
+                self.write_line("w", "device recovered")
+
+    def _wait_for_device(self):
+        while not self.port:
+            self.open_port()
+            time.sleep(self.port_retry_timeout)
 
     def calibrate(self):
         print("Manually move the sending unit from the lowest to the highest position")
@@ -122,9 +154,12 @@ class DaemonApp(object):
 
     def run(self):
         self.open_port()
+        last_value = 0.0
 
         for ticks, value in self.get_lines(1.0):
-            self.handle_value(value)
+            if value != last_value:
+                self.handle_value(ticks, value)
+                last_value = value
 
     def shutdown(self):
-        self.port.close()
+        self.close_port()
