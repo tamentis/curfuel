@@ -26,8 +26,7 @@ Daemon
 ======
 This small piece of software will poll the micro-controller every seconds,
 reading the serial/usb port and look for the ``raw_fuel_level`` output token
-then store the interpreted gallon level in a flat text file. To save some
-space, only the different readings are stored. The format is::
+then store the interpreted gallon level in a flat text file. The format is::
 
 	code:utc_unix_timestamp:uc_ticks:raw_reading:gallons
 

@@ -20,14 +20,18 @@ class DaemonApp(object):
         self.min_value = 0.0
         self.max_value = 1023.0
         self.tank = None
+        self.reversed = False
     
     def load_config(self, filename):
         cp = ConfigParser.ConfigParser()
         cp.read(filename)
         self.port_name = cp.get("serial", "device")
+        self.output_file = cp.get("output", "file")
+
+        # Sensor and calibration
         self.min_value = float(cp.get("calibration", "minimum"))
         self.max_value = float(cp.get("calibration", "maximum"))
-        self.output_file = cp.get("output", "file")
+        self.reversed = cp.get("sensor", "reversed").lower() == "true"
 
         # Setup tank
         orientation = cp.get("tank", "orientation")
@@ -82,17 +86,21 @@ class DaemonApp(object):
     def handle_value(self, ticks, value):
         # too low!
         if value < self.min_value:
-            self.write_line("w", "below threshold")
+            self.write_line("w", "below threshold (raw=%d)" % value)
             return
 
         # too high
         if value > self.max_value:
-            self.write_line("w", "above threshold")
+            self.write_line("w", "above threshold (raw=%d)" % value)
             return
 
         scale = self.max_value - self.min_value
         rel_value = value - self.min_value
         ratio = rel_value / scale
+
+        if self.reversed:
+            ratio = 1.0 - ratio
+
         liquid_level = ratio * self.tank.depth
         cubic_meters = self.tank.get_liquid_volume(liquid_level)
         gallons = self.tank.litres_to_gallons(cubic_meters)

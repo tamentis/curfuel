@@ -12,6 +12,10 @@ depth = 0.68
 length = 1.63
 width = 1.08
 
+# Some sensor work backward (full = low resistance)
+[sensor]
+reversed = true
+
 # This helps getting the scale, minimum is the measurement when the floating
 # unit is at the lowest level, basically when the tank is empty, maximum
 # is the highest the floating unit could physically go.
