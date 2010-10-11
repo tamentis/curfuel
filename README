@@ -71,3 +71,17 @@ License
 =======
 All the new code is under ISC license (BSD/MIT compatible). Parts of the
 library were not rewritten and are licensed under LGPL (wiring and arduino).
+
+TODO
+====
+ - Too much noise at the moment, we need to get the sending unit out and 
+   try a smaller resistor to allow more current to flow through, but don't
+   do that while the sensor is in the tank to avoid overheating. Test it out
+   for 24 hours first in full and empty positions.
+
+ - Investigate using imlib2 as a drawing library to create the same kind of
+   charts currently created with matplot.
+
+ - Refactor plotter.py completely into a library with two compiles sub-modules
+   (record loader and chart generator) and a main script using this module
+   every 10 minutes to update the charts.

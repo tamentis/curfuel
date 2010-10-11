@@ -20,7 +20,7 @@
 
 #include <Python.h>
 
-#define SAMPLE_SIZE	10000
+#define SAMPLE_SIZE	4096
 
 static PyObject *RecLoadError;
 
